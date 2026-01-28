@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Royal English Worksheet V10</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+    :root {
+        --primary: #1a2a3a; /* كحلي ملكي */
+        --gold: #c5a059;   /* ذهبي مطفي فخم */
+        --bg-body: #f4f4f4;
+        --page-bg: #fff;
+        
+        /* ألوان التمييز للأعمدة */
+        --col-1-bg: #fdfbf7; /* كريمي فاتح جداً */
+        --col-3-bg: #f8f9fa; /* رمادي ثلجي */
+    }
+
+    body {
+        margin: 0; background: var(--bg-body);
+        font-family: 'Cairo', sans-serif; /* واجهة التحكم عربي */
+        padding-top: 180px; padding-bottom: 50px;
+        overflow-x: hidden;
+    }
+
+    /* --- 1. واجهة التحكم (عربي) --- */
+    .controls {
+        position: fixed; top: 0; left: 0; right: 0;
+        z-index: 1000; background: #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border-bottom: 3px solid var(--gold);
+    }
+    .tool-row {
+        padding: 8px; display: flex; flex-wrap: wrap; gap: 8px;
+        justify-content: center; align-items: center;
+    }
+    
+    button, select {
+        padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px;
+        font-family: 'Cairo'; font-weight: 600; font-size: 13px;
+        background: #fff; cursor: pointer; transition: all 0.2s;
+    }
+    button:active { transform: scale(0.96); }
+    
+    .btn-main { background: var(--primary); color: #fff; border:none; }
+    .btn-gold { background: var(--gold); color: #fff; border:none; }
+    .btn-danger { background: #c0392b; color: #fff; border:none; }
+
+    /* ألوان التنسيق */
+    .color-dot {
+        width: 24px; height: 24px; border-radius: 50%; border: 1px solid #ccc;
+        cursor: pointer; position: relative;
+    }
+    .color-dot.active { border: 2px solid var(--gold); transform: scale(1.15); }
+
+    /* --- 2. الورقة (English LTR) --- */
+    #zoom-area {
+        margin-top: 25px; display: flex; justify-content: center;
+        transform-origin: top center; transition: transform 0.2s;
+    }
+
+    .page {
+        direction: ltr; /* أساسي للإنجليزي */
+        width: 210mm; min-height: 297mm;
+        background: var(--page-bg); 
+        padding: 15mm; margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+        position: relative; overflow: hidden;
+        display: flex; flex-direction: column;
+        
+        /* الإطار الملكي */
+        border: 1px solid #ccc;
+        outline: 2px solid var(--primary);
+        outline-offset: -10px;
+        
+        font-family: 'Roboto', sans-serif; /* خط الورقة إنجليزي */
+    }
+
+    /* تحسين الكتابة */
+    [contenteditable] { 
+        outline: none; min-height: 1.2em; transition: 0.2s; 
+        border-bottom: 1px dashed transparent;
+    }
+    [contenteditable]:focus { 
+        background: rgba(197, 160, 89, 0.1); 
+        border-bottom-color: var(--gold);
+    }
+
+    /* --- الهيدر (Header) --- */
+    .royal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 25px; padding-bottom: 15px;
+        border-bottom: 2px solid var(--gold);
+        position: relative;
+    }
+    
+    .header-left, .header-right { width: 25%; font-size: 14px; color: #444; }
+    .header-center { flex: 1; text-align: center; }
+
+    /* الشعار */
+    .logo-frame {
+        width: 90px; height: 90px; margin: 0 auto 5px;
+        border: 2px double var(--primary); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; overflow: hidden; background: #fff;
+    }
+    .logo-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .logo-hint { font-size: 10px; color: #999; text-align: center; line-height: 1.2; }
+
+    .main-title {
+        font-family: 'Playfair Display', serif; /* خط عناوين فخم */
+        font-size: 32px; color: var(--primary); font-weight: 700;
+        margin: 5px 0; letter-spacing: 1px;
+    }
+    
+    .sub-info {
+        display: flex; justify-content: center; gap: 15px; margin-top: 5px;
+    }
+    .badge {
+        background: var(--primary); color: var(--gold);
+        padding: 2px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .field-box {
+        border: 1px solid #ccc; padding: 5px; margin-bottom: 5px;
+        font-size: 12px; border-radius: 4px;
+    }
+
+    /* --- العناوين (Titles) --- */
+    .section-title {
+        display: flex; align-items: center; gap: 10px;
+        margin: 15px 0 10px; color: var(--primary);
+    }
+    .section-icon {
+        background: var(--gold); width: 8px; height: 25px; border-radius: 2px;
+    }
+    .section-text {
+        font-family: 'Playfair Display', serif;
+        font-size: 20px; font-weight: bold; border-bottom: 1px solid #eee; width: 100%;
+    }
+
+    /* --- الجدول (Grid) --- */
+    .grid {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        border: 2px solid var(--primary); 
+        margin-bottom: 20px;
+    }
+    .cell {
+        border-bottom: 1px solid #ddd; border-left: 1px solid #ddd;
+        min-height: 48px; padding: 5px;
+        display: flex; align-items: center; justify-content: center;
+        text-align: center; word-break: break-word; background: #fff;
+    }
+    /* إلغاء الخط الأيسر لأول خلية لأننا LTR */
+    .cell:nth-child(4n + 1) { border-left: none; }
+    
+    /* تمييز الأعمدة */
+    .cell:nth-child(4n + 1) { background-color: var(--col-1-bg); font-weight: 600; color: var(--primary); }
+    .cell:nth-child(4n + 3) { background-color: var(--col-3-bg); }
+
+    /* --- الملاحظات والدوائر --- */
+    .circles-area { display: flex; gap: 15px; margin-bottom: 20px; }
+    .circle-box {
+        flex: 1; height: 45px;
+        border: 1px solid var(--gold); border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: bold; color: #555; background: #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    /* --- المربعات السفلية (طلبك المحدد) --- */
+    .bottom-layout {
+        display: flex; gap: 20px; min-height: 120px; margin-bottom: 10px;
+    }
+    
+    /* المربع الأول: مربع الشكل (صغير) */
+    .box-square {
+        width: 150px; /* عرض ثابت ليكون مربعاً تقريباً */
+        border: 2px solid var(--primary); border-radius: 6px;
+        padding: 10px; background: #fff;
+        display: flex; flex-direction: column;
+    }
+    
+    /* المربع الثاني: مستطيل (يأخذ باقي المساحة) */
+    .box-rect {
+        flex: 1; /* يأخذ باقي العرض */
+        border: 2px solid var(--primary); border-radius: 6px;
+        padding: 10px; background: #fdfdfd;
+        display: flex; flex-direction: column;
+    }
+
+    .box-label {
+        font-size: 11px; color: var(--gold); font-weight: bold; 
+        text-transform: uppercase; margin-bottom: 5px;
+    }
+
+    /* --- الفوتر --- */
+    .footer {
+        margin-top: auto; padding-top: 10px; border-top: 1px solid #eee;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    
+    .teacher-sign {
+        font-family: 'Playfair Display', serif; font-size: 16px; 
+        color: var(--primary); border-bottom: 1px dotted #999; min-width: 100px;
+    }
+
+    .page-badge {
+        background: var(--primary); color: #fff; 
+        padding: 3px 10px; border-radius: 10px; font-size: 12px;
+    }
+
+    .score-stamp {
+        width: 80px; height: 80px;
+        border: 3px double #c0392b; border-radius: 50%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #c0392b; font-weight: 900; font-size: 24px;
+        transform: rotate(-10deg);
+        background: #fff;
+    }
+
+    /* --- نافذة التوزيع --- */
+    #bulkPopup {
+        display: none; position: fixed; top: 150px; left: 50%; transform: translateX(-50%);
+        width: 90%; max-width: 500px; background: #fff; padding: 20px;
+        border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 2000;
+        border: 2px solid var(--gold); direction: rtl; /* النافذة عربي */
+    }
+
+    @media print {
+        .controls, #bulkPopup { display: none !important; }
+        body { padding: 0; background: #fff; }
+        #zoom-area { transform: none !important; margin: 0; display: block; }
+        .page { margin: 0; box-shadow: none; width: 100%; page-break-after: always; outline: none; border: 1px solid #000; }
+        .page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+</head>
+<body>
+
+<input type="file" id="logoInput" accept="image/*" style="display: none;" onchange="handleLogo(this)">
+
+<div class="controls">
+    <div class="tool-row">
+        <select id="rowCount" onchange="updateRows(this.value)">
+            <option value="5">5 Rows</option>
+            <option value="9">9 Rows</option>
+            <option value="11" selected>11 Rows</option>
+            <option value="13">13 Rows</option>
+        </select>
+        <button class="btn-main" onclick="addPage()">➕ Page</button>
+        <button onclick="copyPage()">🔁 Copy</button>
+        <button class="btn-danger" onclick="delPage()">🗑️ Del</button>
+        <button class="btn-gold" onclick="toggleBulk()">📝 Auto Fill</button>
+        <button class="btn-main" onclick="savePDF()">📄 PDF</button>
+        <button onclick="document.getElementById('logoInput').click()" style="border-color:var(--gold)">🖼️ Logo</button>
+    </div>
+    
+    <div class="tool-row" style="background:#fafafa; border-top:1px solid #eee">
+        <span style="font-size:12px; color:#666">Formatting:</span>
+        <select onchange="setGlobal('font', this.value)">
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Playfair Display', serif">Playfair</option>
+            <option value="'Cairo', sans-serif">Cairo</option>
+        </select>
+        <select onchange="setGlobal('size', this.value)">
+            <option value="14px">14</option>
+            <option value="16px">16</option>
+            <option value="18px" selected>18</option>
+            <option value="22px">22</option>
+        </select>
+        <button id="btnBold" onclick="setGlobal('bold')" style="font-weight:bold">B</button>
+        <div class="color-dot active" style="background:#000" onclick="setGlobal('color', '#000', this)"></div>
+        <div class="color-dot" style="background:#1a2a3a" onclick="setGlobal('color', '#1a2a3a', this)"></div>
+        <div class="color-dot" style="background:#c0392b" onclick="setGlobal('color', '#c0392b', this)"></div>
+        <div class="color-dot" style="background:#27ae60" onclick="setGlobal('color', '#27ae60', this)"></div>
+    </div>
+</div>
+
+<div id="bulkPopup">
+    <h3 style="margin-top:0; color:var(--primary)">التوزيع التلقائي (Auto-Fill)</h3>
+    <textarea id="bulkTxt" rows="6" style="width:100%; padding:8px; border:1px solid #ccc; font-family:'Roboto'" placeholder="Paste English words here..."></textarea>
+    <div style="margin-top:15px; display:flex; gap:10px">
+        <select id="bulkCol" style="flex:1">
+            <option value="0">Column 1 (Main)</option>
+            <option value="1">Column 2</option>
+            <option value="2">Column 3 (Gray)</option>
+            <option value="3">Column 4</option>
+        </select>
+        <button class="btn-gold" style="flex:1" onclick="runSmartBulk()">Start</button>
+        <button class="btn-danger" onclick="toggleBulk()">Cancel</button>
+    </div>
+</div>
+
+<div id="zoom-area">
+    <div id="doc-container">
+        
+        <div class="page sheet">
+            
+            <div class="royal-header">
+                <div class="header-left">
+                    <div class="field-box" contenteditable="true">Date: .../.../2025</div>
+                    <div class="field-box" contenteditable="true">Class: ..........</div>
+                </div>
+
+                <div class="header-center">
+                    <div class="logo-frame" onclick="document.getElementById('logoInput').click()" title="Upload Logo">
+                        <img src="" class="logo-img">
+                        <div class="logo-hint">Upload<br>Logo</div>
+                    </div>
+                    <div class="main-title" contenteditable="true">English Worksheet</div>
+                    <div class="sub-info">
+                        <div class="badge" contenteditable="true">Unit 1</div>
+                        <div class="badge" contenteditable="true">Lesson 1</div>
+                    </div>
+                </div>
+
+                <div class="header-right" style="text-align:right">
+                    <div class="field-box" style="height:50px" contenteditable="true">Student Name:<br>....................</div>
+                </div>
+            </div>
+
+            <div class="section-title">
+                <div class="section-icon"></div>
+                <div class="section-text" contenteditable="true">Vocabulary & Words</div>
+            </div>
+
+            <div class="grid"></div>
+
+            <div class="section-title">
+                <div class="section-icon" style="background:var(--primary)"></div>
+                <div class="section-text" contenteditable="true">Grammar & Notes</div>
+            </div>
+
+            <div class="circles-area">
+                <div class="circle-box" contenteditable="true">Note 1</div>
+                <div class="circle-box" contenteditable="true">Note 2</div>
+                <div class="circle-box" contenteditable="true">Note 3</div>
+            </div>
+
+            <div class="bottom-layout">
+                <div class="box-square" contenteditable="true">
+                    <div class="box-label" contenteditable="false">Keywords</div>
+                    </div>
+                
+                <div class="box-rect" contenteditable="true">
+                    <div class="box-label" contenteditable="false">Sentences & Examples</div>
+                    </div>
+            </div>
+
+            <div class="footer">
+                <div>
+                    <div style="font-size:10px; color:#888">Teacher:</div>
+                    <div class="teacher-sign" contenteditable="true">Mr. Ahmed</div>
+                </div>
+
+                <div class="page-badge">Page 1</div>
+
+                <div class="score-stamp">
+                    <span style="font-size:10px; font-weight:normal; display:block; margin-bottom:-5px">SCORE</span>
+                    <div contenteditable="true">/10</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- اللوجو ---
+    function handleLogo(input) {
+        if (input.files[0]) {
+            const r = new FileReader();
+            r.onload = e => {
+                window.uploadedLogo = e.target.result;
+                document.querySelectorAll('.logo-img').forEach(img => {
+                    img.src = e.target.result; img.style.display = 'block';
+                });
+                document.querySelectorAll('.logo-hint').forEach(h => h.style.display='none');
+            };
+            r.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // --- التنسيق ---
+    let style = { color: '#000', size: '18px', font: "'Roboto', sans-serif", weight: 'normal' };
+    let rowsNum = 11;
+
+    function setGlobal(p, v, btn) {
+        if(p==='color') {
+            style.color = v;
+            document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+        }
+        if(p==='size') style.size = v;
+        if(p==='font') style.font = v;
+        if(p==='bold') {
+            style.weight = (style.weight==='normal')?'bold':'normal';
+            document.getElementById('btnBold').style.background = (style.weight==='bold')?'#eee':'#fff';
+        }
+    }
+
+    document.addEventListener('focusin', e => {
+        if(e.target.isContentEditable) {
+            e.target.style.color = style.color;
+            e.target.style.fontSize = style.size;
+            e.target.style.fontFamily = style.font;
+            e.target.style.fontWeight = style.weight;
+        }
+    });
+
+    // --- الجدول ---
+    function buildGrid(sheet, keep=true) {
+        const grid = sheet.querySelector('.grid');
+        let saved = [];
+        if(keep) sheet.querySelectorAll('.cell').forEach(c => saved.push({h:c.innerHTML, s:c.getAttribute('style')}));
+        
+        grid.innerHTML = "";
+        for(let i=0; i<rowsNum; i++) {
+            for(let c=0; c<4; c++) {
+                let d = document.createElement('div');
+                d.className = 'cell'; d.contentEditable = true;
+                let idx = (i*4)+c;
+                if(keep && saved[idx]) {
+                    d.innerHTML = saved[idx].h;
+                    if(saved[idx].s) d.setAttribute('style', saved[idx].s);
+                } else {
+                    d.style.color = style.color; d.style.fontSize = style.size;
+                    d.style.fontFamily = style.font; d.style.fontWeight = style.weight;
+                }
+                grid.appendChild(d);
+            }
+        }
+    }
+    buildGrid(document.querySelector('.sheet'), false);
+
+    function updateRows(v) {
+        rowsNum = parseInt(v);
+        document.querySelectorAll('.sheet').forEach(s => buildGrid(s, true));
+    }
+
+    // --- الصفحات ---
+    function addPage() {
+        const area = document.getElementById('doc-container');
+        const clone = area.firstElementChild.cloneNode(true);
+        clone.querySelectorAll('.cell').forEach(c => { c.innerText=""; c.removeAttribute('style'); });
+        
+        if(window.uploadedLogo) {
+             const img = clone.querySelector('.logo-img');
+             img.src = window.uploadedLogo; img.style.display = 'block';
+             clone.querySelector('.logo-hint').style.display='none';
+        }
+        area.appendChild(clone);
+        updatePg();
+        setTimeout(() => { clone.scrollIntoView({behavior:'smooth'}); fitZoom(); }, 100);
+        return clone;
+    }
+
+    function copyPage() {
+        const area = document.getElementById('doc-container');
+        area.appendChild(area.lastElementChild.cloneNode(true));
+        updatePg();
+    }
+
+    function delPage() {
+        const area = document.getElementById('doc-container');
+        if(area.children.length>1 && confirm("Delete last page?")) {
+            area.lastElementChild.remove();
+            updatePg();
+        }
+    }
+
+    function updatePg() {
+        document.querySelectorAll('.sheet').forEach((s,i) => {
+            s.querySelector('.page-badge').innerText = "Page "+(i+1);
+        });
+    }
+
+    // --- التوزيع الذكي ---
+    function toggleBulk() {
+        const p = document.getElementById('bulkPopup');
+        p.style.display = (p.style.display==='block')?'none':'block';
+    }
+
+    function runSmartBulk() {
+        const txt = document.getElementById('bulkTxt').value;
+        const words = txt.split('\n').filter(w=>w.trim());
+        const col = parseInt(document.getElementById('bulkCol').value);
+        let ptr = 0;
+        
+        document.querySelectorAll('.sheet').forEach(s => {
+            const cells = s.querySelectorAll('.cell');
+            for(let i=0; i<cells.length; i++) {
+                if(ptr<words.length && i%4===col && cells[i].innerText.trim()==="") {
+                    cells[i].innerText = words[ptr];
+                    cells[i].style.color=style.color; cells[i].style.fontSize=style.size;
+                    ptr++;
+                }
+            }
+        });
+
+        while(ptr < words.length) {
+            const ns = addPage();
+            const cells = ns.querySelectorAll('.cell');
+            for(let i=0; i<cells.length; i++) {
+                if(ptr<words.length && i%4===col) {
+                    cells[i].innerText = words[ptr];
+                    cells[i].style.color=style.color; cells[i].style.fontSize=style.size;
+                    ptr++;
+                }
+            }
+        }
+        toggleBulk();
+    }
+
+    // --- PDF & Zoom ---
+    function fitZoom() {
+        const w = window.innerWidth;
+        const wrap = document.getElementById('zoom-area');
+        if(w<820) {
+            const s = (w/820)*0.96;
+            wrap.style.transform = `scale(${s})`;
+            wrap.style.height = (document.getElementById('doc-container').offsetHeight*s)+"px";
+        } else {
+            wrap.style.transform = "none";
+            wrap.style.height = "auto";
+        }
+    }
+    window.onload = fitZoom; window.onresize = fitZoom;
+
+    async function savePDF() {
+        const wrap = document.getElementById('zoom-area');
+        const t = wrap.style.transform;
+        wrap.style.transform="none";
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p','mm','a4');
+        const sheets = document.querySelectorAll('.sheet');
+        const btn = document.querySelector('.btn-main:last-child'); // PDF button
+        
+        btn.innerText = "Saving...";
+        for(let i=0; i<sheets.length; i++) {
+            if(i>0) doc.addPage();
+            const cvs = await html2canvas(sheets[i], {scale:2, useCORS:true});
+            doc.addImage(cvs.toDataURL('image/jpeg',0.95), 'JPEG', 0,0,210,297);
+        }
+        doc.save('English_Worksheet.pdf');
+        btn.innerText = "📄 PDF";
+        wrap.style.transform=t;
+    }
+</script>
+
+</body>
+</html>
